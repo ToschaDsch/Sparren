@@ -10,7 +10,11 @@ class Languages:
 @dataclass
 class Variables:
     padding = 15
-
+    screenBH = (200, 200)
+    screen_space_x0 = 20
+    screen_space_xn = 20
+    screen_space_y0 = 20
+    screen_space_yn = 20
     language: Languages = Languages.german
 
 
@@ -51,7 +55,7 @@ class TextTranslation:
     forward = Translation(english='Forward', german='Vorwärts')
     points = Translation(english='Points', german='Punkte')
     rolled_section = Translation(english='rolled section', german='gewalzte Profile')
-    span = Translation('span, m', 'Feldlänge, m')
+    span = Translation('span lx, m', 'Feldlänge lx, m')
     i_sections = Translation(english='I sections', german='I Profile')
     u_sections = Translation(english='U sections', german='U Profile')
     l_sections = Translation(english='L sections', german='Winkel')

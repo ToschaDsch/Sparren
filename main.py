@@ -1,3 +1,4 @@
+import math
 import sys
 
 from PySide6.QtCore import Qt
@@ -10,15 +11,22 @@ from PySide6.QtWidgets import (
 )
 from PySide6 import QtGui
 
-from variables import TextTranslation
+from variables import TextTranslation, Variables
 
 
 class WindowSection(QMainWindow):
     def __init__(self):
         super().__init__()
+        # init class variables
+
         self._span_list: [float] = [3, 2.5]
         self._g3_list: [float] = [.3, .3]
         self._corner: float = 45
+        self._scale: float = 1
+        self._alpha: float = math.pi * .25
+
+        # init frontend elements
+        self._painter: QtGui.QPainter | None = None
         left_layout = QVBoxLayout()
         self._make_left_layout(left_layout=left_layout)
         right_layout = QVBoxLayout()
@@ -27,9 +35,7 @@ class WindowSection(QMainWindow):
         up_layout.addLayout(left_layout)
         up_layout.addLayout(right_layout)
 
-
         bottom_layout = QGridLayout()
-
         general_layout = QVBoxLayout()
         general_layout.addLayout(up_layout)
         general_layout.addLayout(bottom_layout)
@@ -106,7 +112,7 @@ class WindowSection(QMainWindow):
 
     def _make_right_layout(self, right_layout: QVBoxLayout):
         self.label_for_canvas = QLabel()
-        self.canvas = QtGui.QPixmap(200, 200)
+        self.canvas = QtGui.QPixmap(Variables.screenBH[0], Variables.screenBH[1])
         self.canvas.fill(Qt.GlobalColor.black)
         self.label_for_canvas.setPixmap(self.canvas)
         right_layout.addWidget(self.label_for_canvas)
@@ -119,9 +125,73 @@ class WindowSection(QMainWindow):
         self.setFont(QtGui.QFont('Century Gothic', 10))
         self.painter.setBrush(brush)
         self.painter.setPen(self.green_pen)
-        #self._scale = self.make_scale_for_preview()
         self.label_for_canvas.setMouseTracking(True)
-        #self.calculate_new_coordinate_and_draw()
+        self._draw_all()
+
+    def _draw_all(self):
+        self.canvas.fill(Qt.GlobalColor.black)
+        self._draw_model()
+        self.label_for_canvas.setPixmap(self.canvas)
+
+    def _draw_model(self):
+        self._calculate_scale()
+        self._draw_axes()
+        self._draw_spans()
+
+    def _draw_spans(self):
+        self.painter.setPen(self.green_pen)
+        x_i = 0
+        y_i = 0
+        for l_i in self._span_list:
+            x_i_1 = x_i + l_i / math.cos(self._alpha)
+            y_i_1 = y_i + l_i / math.sin(self._alpha)
+            self._draw_a_span(x1=x_i, y1=y_i, x2=x_i_1, y2=y_i_1)
+            x_i = x_i_1
+            y_i = y_i_1
+
+    def _draw_a_span(self, x1: float, y1: float, x2: float, y2: float):
+        # draw a span
+        self._draw_line(x1=x1, y1=y1, x2=x2, y2=y2)
+        # draw a support
+        self._draw_line(x1=x1, y1=y1, x2=x1, y2=y1 - .1)
+
+    def _calculate_scale(self):
+        sl = 0
+        for l_i in self._span_list:
+            sl += l_i
+        self._alpha = self._corner * math.pi / 180
+        lx = sl / math.cos(self._alpha)
+        ly = sl / math.sin(self._alpha)
+        space_x = Variables.screenBH[0] - Variables.screen_space_x0 - Variables.screen_space_xn
+        scale_x = space_x / lx
+        space_y = Variables.screenBH[1] - Variables.screen_space_y0 - Variables.screen_space_yn
+        scale_y = space_y / ly
+        self._scale = min(scale_x, scale_y)
+
+    def _draw_axes(self):
+        self.painter.setPen(self.brown_pen)
+        # horizontal axis
+        self.painter.drawLine(Variables.screen_space_x0 - 5,
+                              Variables.screenBH[1] - Variables.screen_space_y0,
+                              Variables.screenBH[0] - Variables.screen_space_xn,
+                              Variables.screenBH[1] - Variables.screen_space_y0)
+        # vertical axis
+        self.painter.drawLine(Variables.screen_space_x0,
+                              Variables.screenBH[1] - Variables.screen_space_y0 + 5,
+                              Variables.screen_space_x0,
+                              Variables.screen_space_y0)
+
+    def _draw_line(self, x1: float, x2: float, y1: float, y2: float):
+        x1 = self._scale * x1 + Variables.screen_space_x0
+        y1 = -self._scale * y1 + Variables.screenBH[1] - Variables.screen_space_y0
+        x2 = self._scale * x2 + Variables.screen_space_x0
+        y2 = -self._scale * y2 + Variables.screenBH[1] - Variables.screen_space_y0
+        self.painter.drawLine(x1, y1, x2, y2)
+
+    def draw_text(self, text: str, x_y: tuple[float]):
+        x = self._scale * x_y[0] + Variables.screen_space_x0
+        y = -self._scale * x_y[1] + Variables.screenBH[1] - Variables.screen_space_y0
+        self.painter.drawText(x, y, text)
 
     def _add_a_span(self):
         current_row = self._table.rowCount()
