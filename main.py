@@ -201,6 +201,7 @@ class WindowSection(QMainWindow):
         self._draw_line(x1=x1 - .2, y1=-.8+.2, x2=x1 + .2, y2=-.8-.2)
         self._draw_line(x1=x2 - .2, y1=-.8+.2, x2=x2 + .2, y2=-.8-.2)
 
+
     def _calculate_scale(self):
         sl = 0
         for l_i in self._span_list:
