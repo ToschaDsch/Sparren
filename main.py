@@ -18,12 +18,12 @@ class WindowSection(QMainWindow):
     def __init__(self):
         super().__init__()
         # init class variables
-
         self._span_list: [float] = [3, 2.5]
         self._g3_list: [float] = [.3, .3]
         self._corner: float = 45
         self._scale: float = 1
         self._alpha: float = math.pi * .25
+        self._console: float = 0.7
 
         # init frontend elements
         self._painter: QtGui.QPainter | None = None
@@ -77,6 +77,15 @@ class WindowSection(QMainWindow):
             self._table.setItem(i, 0, QTableWidgetItem(str(l_i)))
             self._table.setItem(i, 1, QTableWidgetItem(str(self._g3_list[i])))
 
+        bottom_layout = QHBoxLayout()
+        label_console = QLabel(TextTranslation.console.text)
+        bottom_layout.addWidget(label_console)
+        edit_console = QLineEdit('0.7')
+        edit_console.setFixedWidth(width)
+        edit_console.textChanged.connect(self._console_is_changed)
+        bottom_layout.addWidget(edit_console)
+        left_layout.addLayout(bottom_layout)
+
     def _table_item_is_changed(self, item):
         row = item.row()
         col = item.column()
@@ -95,6 +104,7 @@ class WindowSection(QMainWindow):
         self._span_list.append(self._span_list[-1])
         self._g3_list.append(self._g3_list[-1])
         self._add_a_span()
+        self._draw_all()
 
     def _minus_button(self):
         if len(self._span_list) == 1:
@@ -102,13 +112,27 @@ class WindowSection(QMainWindow):
         self._span_list.pop()
         self._g3_list.pop()
         self._minus_a_span()
+        self._draw_all()
 
     def _corner_is_changed(self, text: str):
+        if text == '':
+            return None
         try:
             i = abs(float(text))
         except TypeError:
             return None
+        if i > 90:
+            i = 89
         self._corner = i
+        self._draw_all()
+
+    def _console_is_changed(self, text: str):
+        try:
+            i = abs(float(text))
+        except TypeError:
+            return None
+        self._console = i
+        self._draw_all()
 
     def _make_right_layout(self, right_layout: QVBoxLayout):
         self.label_for_canvas = QLabel()
@@ -119,7 +143,7 @@ class WindowSection(QMainWindow):
 
         self.painter = QtGui.QPainter(self.canvas)
         brush = QtGui.QBrush(QtGui.QColor(33, 115, 70, 120))
-        self.green_pen = QtGui.QPen(QtGui.QColor(33, 115, 70, 255), 5)
+        self.green_pen = QtGui.QPen(QtGui.QColor(33, 115, 70, 255), 1)
         self.yellow_pen = QtGui.QPen(QtGui.QColor(240, 230, 140, 255), 1)
         self.brown_pen = QtGui.QPen(QtGui.QColor(60, 60, 60, 255), 1)
         self.setFont(QtGui.QFont('Century Gothic', 10))
@@ -135,13 +159,19 @@ class WindowSection(QMainWindow):
 
     def _draw_model(self):
         self._calculate_scale()
-        self._draw_axes()
+        #self._draw_axes()
         self._draw_spans()
 
     def _draw_spans(self):
-        self.painter.setPen(self.green_pen)
+
+        # draw_a_console
         x_i = 0
         y_i = 0
+        x_i_1 = x_i + self._console / math.cos(self._alpha)
+        y_i_1 = y_i + self._console / math.sin(self._alpha)
+        self._draw_a_span(x1=x_i, y1=y_i, x2=x_i_1, y2=y_i_1, support_at_the_beginning=False)
+        x_i = x_i_1
+        y_i = y_i_1
         for l_i in self._span_list:
             x_i_1 = x_i + l_i / math.cos(self._alpha)
             y_i_1 = y_i + l_i / math.sin(self._alpha)
@@ -149,17 +179,34 @@ class WindowSection(QMainWindow):
             x_i = x_i_1
             y_i = y_i_1
 
-    def _draw_a_span(self, x1: float, y1: float, x2: float, y2: float):
+    def _draw_a_span(self, x1: float, y1: float, x2: float, y2: float,
+                     support_at_the_beginning: bool = True,
+                     support_at_the_end: bool = True, ):
+        self.painter.setPen(self.green_pen)
         # draw a span
         self._draw_line(x1=x1, y1=y1, x2=x2, y2=y2)
         # draw a support
-        self._draw_line(x1=x1, y1=y1, x2=x1, y2=y1 - .1)
+        if support_at_the_beginning:
+            self._draw_line(x1=x1, y1=y1, x2=x1, y2=y1 - .5)
+        if support_at_the_end:
+            self._draw_line(x1=x2, y1=y2, x2=x2, y2=y2 - .5)
+        self.painter.setPen(self.brown_pen)
+        # draw size line
+        # vertical
+        self._draw_line(x1=x1, y1=y1 - 1, x2=x1, y2=-1)
+        self._draw_line(x1=x2, y1=y2 - 1, x2=x2, y2=-1)
+        # horizontal
+        self._draw_line(x1=x1-.2, y1=-.8, x2=x2+.2, y2=-.8)
+        # diagonal
+        self._draw_line(x1=x1 - .2, y1=-.8+.2, x2=x1 + .2, y2=-.8-.2)
+        self._draw_line(x1=x2 - .2, y1=-.8+.2, x2=x2 + .2, y2=-.8-.2)
 
     def _calculate_scale(self):
         sl = 0
         for l_i in self._span_list:
             sl += l_i
         self._alpha = self._corner * math.pi / 180
+        sl += self._console
         lx = sl / math.cos(self._alpha)
         ly = sl / math.sin(self._alpha)
         space_x = Variables.screenBH[0] - Variables.screen_space_x0 - Variables.screen_space_xn

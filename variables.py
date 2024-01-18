@@ -13,7 +13,7 @@ class Variables:
     screenBH = (200, 200)
     screen_space_x0 = 20
     screen_space_xn = 20
-    screen_space_y0 = 20
+    screen_space_y0 = 40
     screen_space_yn = 20
     language: Languages = Languages.german
 
@@ -41,6 +41,7 @@ class Translation:
 class TextTranslation:
     boundary_conditions = Translation('boundary conditions', 'Randbedingungen')
     cancel = Translation(english='cancel', german='Abbrechen')
+    console = Translation(english='console, m =', german='Konsole, m =')
     corner = Translation(english='corner, grad =', german='Winkel, grad = ')
     profile_with_parameters = Translation(english='profile \nwith \nparameters', german='Profile \nmit \nParameters')
     points_import_Excel: Translation = Translation(english='Excel import')
