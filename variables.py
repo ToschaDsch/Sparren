@@ -12,7 +12,7 @@ class Variables:
     padding = 15
     screenBH = (200, 200)
     screen_space_x0 = 20
-    screen_space_xn = 20
+    screen_space_xn = 40
     screen_space_y0 = 40
     screen_space_yn = 20
     language: Languages = Languages.german
